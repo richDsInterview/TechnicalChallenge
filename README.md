@@ -1,16 +1,17 @@
-# TechnicalChallenge
-Data Science Technical Challenge - SARAO  
+# Technical Challenge
+## SARAO Data Science Technical Challenge
 
-(disclaimer: this code repo contains a set of example exercises for a job interview.)
+_(disclaimer: this code repo contains a set of example exercises for a job interview.)_
 
 In this technical challenge we want to test for basic skills such as python coding, ability to handle data and reuse open-source code etc., but also to explore more intangible skills such as flexibility, creativity, independence, communication, ability to relearn and teach yourself, ability to implement ideas, ability to solve challenging problems and to scale them to handle large volumes of data.
 
 
 QUESTIONS
 1. Exact image repetition
+
 For the first question your goal is to write a python function to determine whether a test image is identical to any image in the Training directory of images. In addition to working code please outline your algorithm and briefly discuss its potential limitations and how you might speed it up.
 
-    1.1 A naive solution to this problem is to directly compare the byte values of each image file in the Testing directory to the target image. 
+    1.1 A naive solution to this problem is to directly compare the byte values of each image file in the Testing directory to the target image.
     
     Of course there are serious limitations to this approach:
     + this method is not optimised for speed in any way.
@@ -20,7 +21,10 @@ For the first question your goal is to write a python function to determine whet
     A way to get around the file type problem is to compare the actual bit maps to each other.
 
 2. Image repetition with resizing
+
 We next want to check if a new test image is the same as any of the training data, but this time allowing for possible resizing of the test image (you may assume the aspect ratio of the two images is the same if they have been resized). Write a python function to solve this problem and briefly describe your solution.
+    2.1 
+    
 
 3. Image repetition with blurring or added noise
 A friend of yours decides to try to fool your system by messing with the test images before you receive them. She does this by Gaussian blurring some of the images or by adding a small amount of noise to each pixel in the image. Design a simple machine learning algorithm that can handle such types of image distortions of the images, as well the cases already discussed in questions 1 and 2.
