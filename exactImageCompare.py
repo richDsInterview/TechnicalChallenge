@@ -3,7 +3,7 @@
 """A simple python script to exactly compare two images
 """
 
-from __future__ import print_function
+#from __future__ import print_function
 import sys
 import argparse
 
