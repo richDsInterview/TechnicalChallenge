@@ -13,7 +13,8 @@ def main(arguments):
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('infile', help="Input file", type=argparse.FileType('r'))
+    parser.add_argument('infile1', help="Input file 1", type=argparse.FileType('r'))
+    parser.add_argument('infile2', help="Input file 2", type=argparse.FileType('r'))
     parser.add_argument('-o', '--outfile', help="Output file",
                         default=sys.stdout, type=argparse.FileType('w'))
 
