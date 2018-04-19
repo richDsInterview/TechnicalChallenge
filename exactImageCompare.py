@@ -21,8 +21,7 @@ def main(arguments):
     args = parser.parse_args(arguments)
 
     print(args)
-    print(args[1])
-    print(args['infile1'])
+    args
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
