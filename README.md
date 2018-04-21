@@ -4,6 +4,8 @@
 
 _In this technical challenge we want to test for basic skills such as python coding, ability to handle data and reuse open-source code etc., but also to explore more intangible skills such as flexibility, creativity, independence, communication, ability to relearn and teach yourself, ability to implement ideas, ability to solve challenging problems and to scale them to handle large volumes of data._
 
+![icon](images/icon2.png)
+
 
 ##QUESTIONS
 
@@ -41,12 +43,13 @@ Require:
 Issues: 
 + while this approach can deal with scaling, other image modifications (rotations, translations, blurring, the addition of noise, scaling, cropping) are not dealt with.
 
-One issue is that a bitwise comparison of the np arrays when a sample image ("/Test/test_image9.jpg") is scaled and rescaled and compared to the original version of itself yields a dismal similarity:
+One issue is that a bitwise comparison of the np arrays when a sample image ("/Test/test_image9.jpg", shown below) is scaled and rescaled and compared to the original version of itself yields a dismal similarity in a bitwise comparison (i.e. 59.8% of bit-wise pixel values are different), even though the images appear identical to the naked eye:
 
     In [58]: np.count_nonzero(im1!=im2_scaled)/im1.size
     Out[58]: 0.5979717813051146
     
-![Alt Text](images/test_image9.jpg) ![Scaled, then unscaled version of previous image](images/test_image9.jpg)
+![example image](images/test_image9.jpg) 
+!["Scaled, then unscaled version of previous image"](images/test_image9.jpg)
     
 Converting these images to greyscale helps slightly:
 
@@ -60,28 +63,19 @@ Quantising the pixel values to 2^4 bits rather than than 2^8 helps more:
     np.count_nonzero(im1_quant!=im2_quant)/im1_quant.size
     Out[112]: 0.15625220458553793
    
-Using (16x16) thumbnail versions of the images helps too.
+Using (16x16) thumbnail versions of the images helps too:
 
     In [62]: np.count_nonzero(thumb1!=thumb2)/thumb1.size
     Out[62]: 0.4127604166666667
+    
+![example thumbnail](images/thumbA_big.png) 
+!["Scaled, then unscaled version of previous thumbnail"](images/thumbB_big.png)
     
 Note that all quantisation processes (RBG colour, pixel values, and image size) make the algorithm more likely to match images with slight modifications in rotation and translation, as well as higher-order modifications, at the cost of not being as well able to differentiate similar but not identical images. It makes sense to tune these parameters (with the help of a Training database) to maximise the False-positive/false-negative rate.
 
 In the final implementation, I have written a comparison function that allows all three options, but with defaults set to keep colour information, quantise pixel values more coarsely (by/to2^4), and to use thumbnail representations.
 
-
-
-But even this is not quite right. What is the better way of doing this? Perceptual hashing. Taking a perceptual hash of each image yileds the results we desire:
-
-    np.count_nonzero(hash1!=hash2)/hash2.bit_length()
-    
-    In [62]: np.count_nonzero(thumb1!=thumb2)/thumb1.size
-    Out[62]: 0.4127604166666667
-    
-    In [74]: np.count_nonzero(hash1!=hash2)/hash2.bit_length()
-    Out[74]: 0.0078125
-
-
+    python3 scaledImageRepetition.py ../Data_Science_Images/Test/test_image6.jpeg ../Data_Science_Images/Test/
 
 
 
@@ -98,6 +92,17 @@ We require, for this challenge comparison, a representation of each image in som
 
 One solution is to compute a _perceptual_ hash (i.e. one that will produce similar hash values for perceptually similar or identical input vectors/maps, which is the opposite effect of that desired for a cryptographic hash) of the image. A major advantage of this method is that hashing is highly computationally efficient, and broadly corresponds to our requirements. The main issues with perceptual hashes in general is that they are not generally rotation-invariant and do not work well if the image is cropped, damaged or amended. 
 
+Taking a perceptual hash of each image yields:
+
+    np.count_nonzero(hash1!=hash2)/hash2.bit_length()
+    
+    In [62]: np.count_nonzero(thumb1!=thumb2)/thumb1.size
+    Out[62]: 0.4127604166666667
+    
+    In [74]: np.count_nonzero(hash1!=hash2)/hash2.bit_length()
+    Out[74]: 0.0078125
+
+
 A more robust solution (that will take more computation and time) is to use some kind of feature selection and extraction algorithm that has the property of affine-invariance. Examples of these are SIFT (), SURF (a faster, open-sourced version of SIFT), X, X, or X, or even some weighted combination of these that has, say been trained to optimal weights using machine learning practices. These (affine-invariant feature detection) algorithms essentially operate on chunks of maps at multiple scales, identifying features that are peaks at multiple chunk scales. Once these are identified, they are described in a way forcing them to the same size and orientation for lookup. Since for different images these features should presumably be scattered throughout the image, the image can be recognized even if certain features are obscured or modified. It's certainly not as straight-forward as a DCT metric on a downsampled image, but the nature of widespread image capture, creation and manipulation usually requires this robustness.
 
 One could take some set of combined image representations, such as an eigenvector/PC decomposition or STEM or HOSM etc and determine weighting of each in the final distinguisher function by standard machine learning techniques (training/backprop). However this approach will surely suffer from slow execution speed.
@@ -112,8 +117,8 @@ _Write python code to solve this for an arbitrary input test image. Discuss your
 You notice that each training image in your database, and every new test image, also comes with a metadata tag telling you where it came from.
 Let’s call this tag X. After some calculation you find that certain tags are more likely to correspond to images already in your dataset than others. Using appropriate pseudo-code or equivalently clear writing that would allow someone to begin coding your algorithm, describe how you would systematically use this metadata information to reduce your false positive and false negative error rate in discarding images?
 
-5. Scaling to Large Datasets
+##Scaling to Large Datasets
 How would the algorithms and ideas you presented in questions 3 and 4 scale to a large number of test and training images with unknown noise/blurring in each image? Please comment on the computational efficiency of your algorithms? What could be done to possibly make them more efficient? (Imagine you were doing this for the Google Image database!)
 
-Closing Question
+##Closing Question
 • Do you think this set of challenges missed some important data science skills that you have? If so please let us know. This is a chance to let us know what your super skills are!
