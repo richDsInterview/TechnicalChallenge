@@ -21,6 +21,9 @@ def compareImagesBinary(file1, file2):
 def compareImagesNumpy(file1, file2):
     return np.array_equal(cv2.imread(file1), cv2.imread(file2))
 
+def compareImagesCorr(file1,file2):
+    return np.corr
+
 def main(arguments):
 
     parser = argparse.ArgumentParser(
