@@ -73,45 +73,59 @@ Using (16x16) thumbnail versions of the images helps too:
     
 Note that all quantisation processes (RBG colour, pixel values, and image size) make the algorithm more likely to match images with slight modifications in rotation and translation, as well as higher-order modifications, at the cost of not being as well able to differentiate similar but not identical images. It makes sense to tune these parameters (with the help of a Training database) to maximise the False-positive/false-negative rate.
 
-In the final implementation, I have written a comparison function that allows all three options, but with defaults set to keep colour information, quantise pixel values more coarsely (by/to2^4), and to use thumbnail representations.
+In the full implementation, I have written a comparison function that allows all three options, but with defaults set to keep colour information, quantise pixel values more coarsely (by/to2^4), and to use thumbnail representations.
 
     python3 scaledImageRepetition.py ../Data_Science_Images/Test/test_image6.jpeg ../Data_Science_Images/Test/
 
+##Perceptual Hashing
+All of the above processes are, in effect, tending toward a hash function (i.e. a map of arbitrary-sized data to data of fixed size) of the input image. Specifically, we would like a _perceptual_ hash of the image, one that produces similar hashes for similar input vectors/maps and dissimilar hashes for dissimilar inputs (note that this is the opposite behaviour requiured of cryptographic hash functions, which require maximally uncorrelated hashes for nearby input values).
 
+
+A major advantage of this method is that hashing is computationally efficient, and broadly corresponds to our requirements. The main issues with the class of perceptual hashes in general is that they are not generally rotation-invariant and do not work as well if the image is cropped, damaged or amended (although, as expected, there are variants that combat this at the cost of performance in other metrics).
+
+But of course there are multiple variants and each performs differently to each kind of image modification. The [OpenCV img_hash](https://docs.opencv.org/3.3.1/d4/d93/group__img__hash.html "OpenCV img_hash") class implements various perceptual hashes. Shown below is the performance against various image modifications:
+
+
+![alt hash function comparison][logo]
+
+[logo]: https://docs.opencv.org/3.3.1/attack_performance.JPG
+
+For good performance against a wide range of attacks/modifications, one would possibly implement more than one hash of each image and combine the results. Not shown, nor implemented in the above module is a simple difference hash, which performs exceptionally well under a wide range of attacks (see, e.g. [this](http://www.hackerfactor.com/blog/index.php?/archives/529-Kind-of-Like-That.html) analysis of difference hashing performance). 
 
 
 ###Image repetition with blurring or added noise
 
-_A friend of yours decides to try to fool your system by messing with the test images before you receive them. She does this by Gaussian blurring some of the images or by adding a small amount of noise to each pixel in the image. Design a simple machine learning algorithm that can handle such types of image distortions of the images, as well the cases already discussed in questions 1 and 2._
+1. _A friend of yours decides to try to fool your system by messing with the test images before you receive them. She does this by Gaussian blurring some of the images or by adding a small amount of noise to each pixel in the image. Design a simple machine learning algorithm that can handle such types of image distortions of the images, as well the cases already discussed in questions 1 and 2._
 
-We require, for this challenge comparison, a representation of each image in some basis that is:
-+ broadly insensitive to rotations and translations
+2. _Write python code to solve this for an arbitrary input test image. Discuss your solution in detail and why you chose it. Also discuss other potential approaches to the problem and their pros and cons._
+
+We require, for this challenge comparison, a map of the input image to some hash or representation in some basis that is:
++ broadly insensitive to rotations and translations, affine-invariance.
 + insensitive (with respect to the difference in SNR between images) to blurred or noisy images, and
 + also has some ability to deal with cropping (a harder problem)
 + efficient/fast execution speed is also desirable.
 
-One solution is to compute a _perceptual_ hash (i.e. one that will produce similar hash values for perceptually similar or identical input vectors/maps, which is the opposite effect of that desired for a cryptographic hash) of the image. A major advantage of this method is that hashing is highly computationally efficient, and broadly corresponds to our requirements. The main issues with perceptual hashes in general is that they are not generally rotation-invariant and do not work well if the image is cropped, damaged or amended. 
+A solution (that will take more computation and time) is to use some kind of feature selection and extraction algorithm that has required properties. Examples of these are SSIM, SIFT/SURF, or else some weighted combination of these that has, say been trained to optimal weights using machine learning practices. 
 
-Taking a perceptual hash of each image yields:
+These algorithms essentially operate on chunks of maps at multiple scales, identifying features that are peaks at multiple chunk scales. Once these are identified, they are described in a way forcing them to the same size and orientation for lookup. Since for different images these features should presumably be scattered throughout the image, the image can be recognized even if certain features are obscured or modified. It's certainly not as straight-forward as a DCT metric on a downsampled image, but the nature of widespread image capture, creation and manipulation usually requires this robustness.
 
-    np.count_nonzero(hash1!=hash2)/hash2.bit_length()
+One could also take some set of combined image representations and determine weighting of each in the final distinguisher function by standard machine learning techniques (training/backprop).
+
+If I had lots of time, I'd perhaps test one of these hybrid methods. Since I don't, I have chosen to use the dhash algorithm, installed through PyPI (which itself depends on PIL)
+
+## implement algorithm
+
+The python script perceptualHashRecognition.py run with arguments of the test image and database directory respectively, implements a difference hash on both images, and compares each through the Hamming distance metric:
+
+    python3 perceptualHashRepetition.py Data_Science_Images/Test/test_image6.jpeg Data_Science_Images/Test/
     
-    In [62]: np.count_nonzero(thumb1!=thumb2)/thumb1.size
-    Out[62]: 0.4127604166666667
+    Matching image found in database directory:  test_image8.jpg  (score:  1.0 ).
+    Matching image found in database directory:  test_image9.jpg  (score:  0.9921875 ).
+    Matching image found in database directory:  test_image6.jpeg  (score:  1.0 ).
     
-    In [74]: np.count_nonzero(hash1!=hash2)/hash2.bit_length()
-    Out[74]: 0.0078125
-
-
-A more robust solution (that will take more computation and time) is to use some kind of feature selection and extraction algorithm that has the property of affine-invariance. Examples of these are SIFT (), SURF (a faster, open-sourced version of SIFT), X, X, or X, or even some weighted combination of these that has, say been trained to optimal weights using machine learning practices. These (affine-invariant feature detection) algorithms essentially operate on chunks of maps at multiple scales, identifying features that are peaks at multiple chunk scales. Once these are identified, they are described in a way forcing them to the same size and orientation for lookup. Since for different images these features should presumably be scattered throughout the image, the image can be recognized even if certain features are obscured or modified. It's certainly not as straight-forward as a DCT metric on a downsampled image, but the nature of widespread image capture, creation and manipulation usually requires this robustness.
-
-One could take some set of combined image representations, such as an eigenvector/PC decomposition or STEM or HOSM etc and determine weighting of each in the final distinguisher function by standard machine learning techniques (training/backprop). However this approach will surely suffer from slow execution speed.
-
-
-
+## handling false-positive/false-negative ratio
 _Suppose you want a False Positive to False Negative rate of 2-1 (i.e., for every image that you incorrectly exclude from your database, you are willing to accept two images that should have been excluded because they are replicas of images in your database). How would you go about achieving that ratio, assuming you had a sufficiently large training set of images?_
 
-_Write python code to solve this for an arbitrary input test image. Discuss your solution in detail and why you chose it. Also discuss other potential approaches to the problem and their pros and cons._
 
 ## Adding Metadata
 You notice that each training image in your database, and every new test image, also comes with a metadata tag telling you where it came from.
