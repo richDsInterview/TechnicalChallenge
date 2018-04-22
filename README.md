@@ -7,7 +7,7 @@ _In this technical challenge we want to test for basic skills such as python cod
 ![icon](images/icon2.png)
 
 
-##QUESTIONS
+## QUESTIONS
 
 ### Exact image repetition
 
@@ -24,7 +24,7 @@ Of course there are serious limitations to this approach:
 * any image modification, such as rotations, translations, blurring, the addition of noise, scaling, and cropping will result in failure of direct comparison.
 * this method is not optimised for speed in any way. For faster execution, especially of for loops, one could for example port the script to Cython. In the second question, I implement a method for computing scaled, uniform 16x16 pixel 'postage-stamp' representations of the image maps that can be precomputed and stored in a database, affording speedier comparison of multiple images
 
-###Image repetition with resizing
+### Image repetition with resizing
 
 __We next want to check if a new test image is the same as any of the training data, but this time allowing for possible resizing of the test image (you may assume the aspect ratio of the two images is the same if they have been resized). Write a python function to solve this problem and briefly describe your solution.__
 
@@ -77,7 +77,7 @@ In the full implementation, I have written a comparison function that allows all
 
     python3 scaledImageRepetition.py ../Data_Science_Images/Test/test_image6.jpeg ../Data_Science_Images/Test/
 
-##Perceptual Hashing
+## Perceptual Hashing
 All of the above processes are, in effect, tending toward a hash function (i.e. a map of arbitrary-sized data to data of fixed size) of the input image. Specifically, we would like a _perceptual_ hash of the image, one that produces similar hashes for similar input vectors/maps and dissimilar hashes for dissimilar inputs (note that this is the opposite behaviour requiured of cryptographic hash functions, which require maximally uncorrelated hashes for nearby input values).
 
 
@@ -93,7 +93,7 @@ But of course there are multiple variants and each performs differently to each 
 For good performance against a wide range of attacks/modifications, one would possibly implement more than one hash of each image and combine the results. Not shown, nor implemented in the above module is a simple difference hash, which performs exceptionally well under a wide range of attacks (see, e.g. [this](http://www.hackerfactor.com/blog/index.php?/archives/529-Kind-of-Like-That.html) analysis of difference hashing performance). 
 
 
-###Image repetition with blurring or added noise
+### Image repetition with blurring or added noise
 
 1. _A friend of yours decides to try to fool your system by messing with the test images before you receive them. She does this by Gaussian blurring some of the images or by adding a small amount of noise to each pixel in the image. Design a simple machine learning algorithm that can handle such types of image distortions of the images, as well the cases already discussed in questions 1 and 2._
 
@@ -131,8 +131,8 @@ _Suppose you want a False Positive to False Negative rate of 2-1 (i.e., for ever
 You notice that each training image in your database, and every new test image, also comes with a metadata tag telling you where it came from.
 Let’s call this tag X. After some calculation you find that certain tags are more likely to correspond to images already in your dataset than others. Using appropriate pseudo-code or equivalently clear writing that would allow someone to begin coding your algorithm, describe how you would systematically use this metadata information to reduce your false positive and false negative error rate in discarding images?
 
-##Scaling to Large Datasets
+## Scaling to Large Datasets
 How would the algorithms and ideas you presented in questions 3 and 4 scale to a large number of test and training images with unknown noise/blurring in each image? Please comment on the computational efficiency of your algorithms? What could be done to possibly make them more efficient? (Imagine you were doing this for the Google Image database!)
 
-##Closing Question
+## Closing Question
 • Do you think this set of challenges missed some important data science skills that you have? If so please let us know. This is a chance to let us know what your super skills are!
