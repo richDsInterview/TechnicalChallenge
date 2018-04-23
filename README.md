@@ -95,25 +95,25 @@ For good performance against a wide range of attacks/modifications, one would po
 
 ### Image repetition with blurring or added noise
 
-1. _A friend of yours decides to try to fool your system by messing with the test images before you receive them. She does this by Gaussian blurring some of the images or by adding a small amount of noise to each pixel in the image. Design a simple machine learning algorithm that can handle such types of image distortions of the images, as well the cases already discussed in questions 1 and 2._
+1. __A friend of yours decides to try to fool your system by messing with the test images before you receive them. She does this by Gaussian blurring some of the images or by adding a small amount of noise to each pixel in the image. Design a simple machine learning algorithm that can handle such types of image distortions of the images, as well the cases already discussed in questions 1 and 2.__
 
-2. _Write python code to solve this for an arbitrary input test image. Discuss your solution in detail and why you chose it. Also discuss other potential approaches to the problem and their pros and cons._
+2. __Write python code to solve this for an arbitrary input test image. Discuss your solution in detail and why you chose it. Also discuss other potential approaches to the problem and their pros and cons.__
 
-We require, for this challenge comparison, a map of the input image to some hash or representation in some basis that is:
+We require, for this comparison, a map of the input image to some representation in some basis or some hash that is:
 + broadly insensitive to rotations and translations, affine-invariance.
 + insensitive (with respect to the difference in SNR between images) to blurred or noisy images, and
 + also has some ability to deal with cropping (a harder problem)
 + efficient/fast execution speed is also desirable.
 
-A solution (that will take more computation and time) is to use some kind of feature selection and extraction algorithm that has required properties. Examples of these are SSIM, SIFT/SURF, or else some weighted combination of these that has, say been trained to optimal weights using machine learning practices. 
+A solution (that will take more computation and time) is to use some kind of feature selection and extraction algorithm that has required properties. Examples of these are [SSIM](https://en.wikipedia.org/wiki/Structural_similarity"), [SIFT](https://en.wikipedia.org/wiki/Scale-invariant_feature_transform)/[SURF](https://en.wikipedia.org/wiki/Speeded_up_robust_features)*, etc (although, see https://arxiv.org/abs/1503.06680). Or else one could use some weighted combination of these that has, say, been trained to optimal weights using machine learning practices (i.e. spliting the dataset into training and testing, learning on the training data and verifying on the testing)
 
-These algorithms essentially operate on chunks of maps at multiple scales, identifying features that are peaks at multiple chunk scales. Once these are identified, they are described in a way forcing them to the same size and orientation for lookup. Since for different images these features should presumably be scattered throughout the image, the image can be recognized even if certain features are obscured or modified. It's certainly not as straight-forward as a DCT metric on a downsampled image, but the nature of widespread image capture, creation and manipulation usually requires this robustness.
+*(_These algorithms essentially operate on chunks of maps at multiple scales, identifying features that are peaks at multiple chunk scales. Once these are identified, they are described in a way forcing them to the same size and orientation for lookup. Since for different images these features should presumably be scattered throughout the image, the image can be recognized even if certain features are obscured or modified. It's certainly not as straight-forward as a DCT metric on a downsampled image, but the nature of widespread image capture, creation and manipulation usually requires this robustness._)
 
 One could also take some set of combined image representations and determine weighting of each in the final distinguisher function by standard machine learning techniques (training/backprop).
 
-If I had lots of time, I'd perhaps test one of these hybrid methods. Since I don't, I have chosen to use the dhash algorithm, installed through PyPI (which itself depends on PIL)
-
 ## implement algorithm
+
+If I had lots of time, I'd perhaps test one of these hybrid methods. Since I don't, I have chosen to use the dhash algorithm, installed through PyPI (which itself depends on PIL)
 
 The python script perceptualHashRecognition.py run with arguments of the test image and database directory respectively, implements a difference hash on both images, and compares each through the Hamming distance metric:
 
@@ -124,8 +124,23 @@ The python script perceptualHashRecognition.py run with arguments of the test im
     Matching image found in database directory:  test_image6.jpeg  (score:  1.0 ).
     
 ## handling false-positive/false-negative ratio
-_Suppose you want a False Positive to False Negative rate of 2-1 (i.e., for every image that you incorrectly exclude from your database, you are willing to accept two images that should have been excluded because they are replicas of images in your database). How would you go about achieving that ratio, assuming you had a sufficiently large training set of images?_
+__Suppose you want a False Positive to False Negative rate of 2-1 (i.e., for every image that you incorrectly exclude from your database, you are willing to accept two images that should have been excluded because they are replicas of images in your database). How would you go about achieving that ratio, assuming you had a sufficiently large training set of images?__
 
+We desire to maximise difference between/separability of the distributions of the distance between test and database images in the negative case (i.e. new image is not a close copy of an existing image) and the positive case (i.e. new image is a close copy of existing image) for some representation/featureset or hash, such that a threshold value may be chosen to ensure the ratio of areas of each histogram on the opposite side of the threshold is 2:1.
+
+Negative case: for images that have no near duplicates in the database, there is minimal correlation between the test cases, and thus we expect the normalised Hamming distance between hashes to form a normal distribution around 0.5.
+
+Positive case: for close image copies, we expect the normalised distance to form some distribution with power distributed closer to 0.
+
+Requirements: some metric for comparison of the distributions for each representation/featureset/hash such that the ratio of the area of the overlapping regions of the positive case compared to the negative case have a ratio of better than 2:1.
+
+First we need to derive the two distributions for each representation. We do this by taking a large sample of unique image, and compute the normalised distance between the perceptual hashes of these and the database images, which gives the negative histogram. We then take non-unique images (one could form these by making small modifications to database images, as above, by blurring, adding noise, rotating and translating them slightly, etc), and then compute the positive histogram.
+
+Now, we must compare these two histograms for each representation/featureset/hash. We do this by using some metric for comparing the distance between two histograms, such as the [Wasserstein Metric](https://en.wikipedia.org/wiki/Wasserstein_metric)/[EMD](https://en.wikipedia.org/wiki/Earth%5Fmover's%5Fdistance). We compute this metric for each representation/featureset/hash, choose the best (i.e. the one that results in the greatest separability).
+ 
+ We set the threshold to a value such that the False Positive Rate (duplicates that are accepted, which is the area of the Negative case distribution that lies to the left of the threshold) is twice the False Negative Rate (non-duplicates that are discarded, which is the area of the Positive case distribution that lies to the right of the threshold).
+ 
+ ![ls](images/cartoon_FPR_FNR.png)
 
 ## Adding Metadata
 You notice that each training image in your database, and every new test image, also comes with a metadata tag telling you where it came from.
