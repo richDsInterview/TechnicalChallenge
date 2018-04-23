@@ -202,4 +202,4 @@ __Do you think this set of challenges missed some important data science skills 
 
 One could use some of the recent developments in AI to classify and tag images at the same time. For instance, could either train a deep convolutional neural network on our own tagged database (or use one of the existing image classification CNNs) to automatically add image tags as we check for uniqueness.
 
-
+[More to follow!]
