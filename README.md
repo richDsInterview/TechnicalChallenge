@@ -13,9 +13,16 @@ _In this technical challenge we want to test for basic skills such as python cod
 
 __For the first question your goal is to write a python function to determine whether a test image is identical to any image in the Training directory of images. In addition to working code please outline your algorithm and briefly discuss its potential limitations and how you might speed it up.__
 
- One could directly compare the byte values of each image file in the Testing directory to the target image, and print the boolean response to the command line. One could also convert the image files to an array (numpy) in memory and perform pixel-by-pixel comparison.
+Option 1: directly compare the byte values of each image file in the Testing directory to the target image, and print the boolean response to the command line.
+Option 2: convert the image files to an array (numpy) in memory and perform pixel-by-pixel comparison.
  
- When invoked with arguments pointing to the test image and database directory respectively, the python script compareTwoImagesExact.py will return if any of the database images is an exact binary match to the test image, and also if the numpy representations of the two images exactly match.
+ When invoked with arguments pointing to the test image and database directory respectively, the python script compareTwoImagesExact.py will return if any of the database images is an exact binary match to the test image, and also if the numpy representations of the two images exactly match. If there is a match, the image will not be added to the Training directory.
+
+    exactImageRepetition.py infile dbDir
+    
+    python3 exactImageRepetition.py Data_Science_Images/Test/test_image4.jpg Data_Science_Images/Training/
+    Exact matching image found in database directory:  True
+    Matching numpy representation to input image's found in database directory:  True
 
 Of course there are serious limitations to this approach:
 * for the binary comparison to succeed, the files must be precisely the same; one is unable with this approach to determine similarity of images if they are of different file formats, even the same class of file format, even if the images are otherwise identical in all respects.
@@ -43,7 +50,13 @@ Require:
 Issues: 
 + while this approach can deal with scaling, other image modifications (rotations, translations, blurring, the addition of noise, scaling, cropping) are not dealt with.
 
-One issue is that a bitwise comparison of the np arrays when a sample image ("/Test/test_image9.jpg", shown below) is scaled and rescaled and compared to the original version of itself yields a dismal similarity in a bitwise comparison (i.e. 59.8% of bit-wise pixel values are different), even though the images appear identical to the naked eye:
+When invoked with arguments pointing to the test image and database directory respectively, the python script scaledImageRepetition.py will return if any of the database images is a scaled replica of the test image. If this is true, the image will not be added to the Training directory.
+
+    python3 scaledImageRepetition.py Data_Science_Images/Test/test_image4.jpg Data_Science_Images/Training/
+    Matching image found in database directory:  training_image3.jpg  (score:  1.0 ).
+
+## Further Thoughts about Scaling
+It is a problem that bitwise comparison of a sample image ("test_image9.jpg", shown below) to a scaled and rescaled version of itself ("test_image9_scaled_unscaled.jpg", shown below that) yields a dismal similarity in a bitwise comparison. 59.8% of bit-wise pixel values are different, even though the images appear identical to the naked eye:
 
     In [58]: np.count_nonzero(im1!=im2_scaled)/im1.size
     Out[58]: 0.5979717813051146
@@ -51,7 +64,9 @@ One issue is that a bitwise comparison of the np arrays when a sample image ("/T
 ![example image](images/test_image9.jpg) 
 !["Scaled, then unscaled version of previous image"](images/test_image9.jpg)
     
-Converting these images to greyscale helps slightly:
+What to do?
+
+Converting these images to greyscale (quantising colour information) helps slightly:
 
     In [89]: grey1=cv2.cvtColor(im1, cv2.COLOR_BGR2GRAY)
     In [90]: grey2=cv2.cvtColor(im2_scaled, cv2.COLOR_BGR2GRAY)
@@ -71,26 +86,34 @@ Using (16x16) thumbnail versions of the images helps too:
 ![example thumbnail](images/thumbA_big.png) 
 !["Scaled, then unscaled version of previous thumbnail"](images/thumbB_big.png)
     
-Note that all quantisation processes (RBG colour, pixel values, and image size) make the algorithm more likely to match images with slight modifications in rotation and translation, as well as higher-order modifications, at the cost of not being as well able to differentiate similar but not identical images. It makes sense to tune these parameters (with the help of a Training database) to maximise the False-positive/false-negative rate.
+Note that all quantisation processes (RBG colour, pixel values, and image size) make the algorithm more likely to match images with slight modifications in rotation and translation, as well as higher-order modifications, at the cost of not being as well able to differentiate similar but not identical images. It obviously makes sense to tune these parameters (with the help of a Training database) to maximise the False-positive/false-negative rate.
 
-In the full implementation, I have written a comparison function that allows all three options, but with defaults set to keep colour information, quantise pixel values more coarsely (by/to2^4), and to use thumbnail representations.
+In the full implementation, I have written a comparison function that allows all three options, but with defaults set to discard/quantise colour information, quantise pixel values more coarsely, and to use thumbnail representations.
 
-    python3 scaledImageRepetition.py ../Data_Science_Images/Test/test_image6.jpeg ../Data_Science_Images/Test/
+    python3 scaledImageRepetition.py Data_Science_Images/Test/test_image9_scaled_unscaled.jpg Data_Science_Images/Test/  -t -g -q8
+    
+    Matching image found in database directory:  test_image9.jpg  (score:  0.85390625 ).
+    Matching image found in database directory:  test_image6.jpeg  (score:  0.78515625 ).
+    Matching image found in database directory:  test_image9_scaled_unscaled.jpg  (score:  1.0 ).
+    Matching image found in database directory:  test_thumb9_A.jpg  (score:  0.8046875 ).
+    Matching image found in database directory:  test_thumb9_B.jpg  (score:  0.76171875 ).
 
 ## Perceptual Hashing
 All of the above processes are, in effect, tending toward a hash function (i.e. a map of arbitrary-sized data to data of fixed size) of the input image. Specifically, we would like a _perceptual_ hash of the image, one that produces similar hashes for similar input vectors/maps and dissimilar hashes for dissimilar inputs (note that this is the opposite behaviour requiured of cryptographic hash functions, which require maximally uncorrelated hashes for nearby input values).
 
 
-A major advantage of this method is that hashing is computationally efficient, and broadly corresponds to our requirements. The main issues with the class of perceptual hashes in general is that they are not generally rotation-invariant and do not work as well if the image is cropped, damaged or amended (although, as expected, there are variants that combat this at the cost of performance in other metrics).
+A major advantage of this method is that hashing is computationally efficient, and broadly corresponds to our requirements. The main issues with the class of perceptual hashes is that they are not generally rotation-invariant and do not work as well if the image is cropped, damaged or amended (although, as expected, there are variants that combat this at the cost of performance in other metrics).
 
-But of course there are multiple variants and each performs differently to each kind of image modification. The [OpenCV img_hash](https://docs.opencv.org/3.3.1/d4/d93/group__img__hash.html "OpenCV img_hash") class implements various perceptual hashes. Shown below is the performance against various image modifications:
+As expected, there are multiple perceptual hashing and each performs differently to each kind of image modification. The [OpenCV img_hash](https://docs.opencv.org/3.3.1/d4/d93/group__img__hash.html "OpenCV img_hash") class implements various perceptual hashes. Shown below is the performance against various image modifications:
 
 
 ![alt hash function comparison][logo]
 
 [logo]: https://docs.opencv.org/3.3.1/attack_performance.JPG
 
-For good performance against a wide range of attacks/modifications, one would possibly implement more than one hash of each image and combine the results. Not shown, nor implemented in the above module is a simple difference hash, which performs exceptionally well under a wide range of attacks (see, e.g. [this](http://www.hackerfactor.com/blog/index.php?/archives/529-Kind-of-Like-That.html) analysis of difference hashing performance). 
+For good performance against a wide range of attacks/modifications, one would possibly implement more than one hash of each image and combine the results. Not shown, nor implemented in OpenCV is a simple difference hash, which performs exceptionally well under a wide range of attacks (see, e.g. [this](http://www.hackerfactor.com/blog/index.php?/archives/529-Kind-of-Like-That.html) analysis of difference hashing performance). 
+
+I've chosen to go with this approach for computational efficiecy, and braod robustness against a multitude of common attacks.
 
 
 ### Image repetition with blurring or added noise
@@ -107,9 +130,9 @@ We require, for this comparison, a map of the input image to some representation
 
 A solution (that will take more computation and time) is to use some kind of feature selection and extraction algorithm that has required properties. Examples of these are [SSIM](https://en.wikipedia.org/wiki/Structural_similarity"), [SIFT](https://en.wikipedia.org/wiki/Scale-invariant_feature_transform)/[SURF](https://en.wikipedia.org/wiki/Speeded_up_robust_features)*, etc (although, see https://arxiv.org/abs/1503.06680). Or else one could use some weighted combination of these that has, say, been trained to optimal weights using machine learning practices (i.e. spliting the dataset into training and testing, learning on the training data and verifying on the testing)
 
-*(_These algorithms essentially operate on chunks of maps at multiple scales, identifying features that are peaks at multiple chunk scales. Once these are identified, they are described in a way forcing them to the same size and orientation for lookup. Since for different images these features should presumably be scattered throughout the image, the image can be recognized even if certain features are obscured or modified. It's certainly not as straight-forward as a DCT metric on a downsampled image, but the nature of widespread image capture, creation and manipulation usually requires this robustness._)
+*(_These algorithms essentially operate on chunks of maps at multiple scales, identifying characteristic features that are peaks at multiple chunk scales. Once these are identified, they are described in a way forcing them to the same size and orientation for lookup. Since for different images these features should presumably be scattered throughout the image, the image can be recognized even if certain features are obscured or modified._)
 
-One could also take some set of combined image representations and determine weighting of each in the final distinguisher function by standard machine learning techniques (training/backprop).
+One could also take some set of combined image representations and determine weighting of each in the final distinguisher function by standard machine learning techniques.
 
 ## implement algorithm
 
