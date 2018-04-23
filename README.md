@@ -128,6 +128,8 @@ __Suppose you want a False Positive to False Negative rate of 2-1 (i.e., for eve
 
 We desire to maximise difference between/separability of the distributions of the distance between test and database images in the negative case (i.e. new image is not a close copy of an existing image) and the positive case (i.e. new image is a close copy of existing image) for some representation/featureset or hash, such that a threshold value may be chosen to ensure the ratio of areas of each histogram on the opposite side of the threshold is 2:1.
 
+ ![cartoon_FPR_FNR.png](images/cartoon_FPR_FNR.png)
+
 Negative case: for images that have no near duplicates in the database, there is minimal correlation between the test cases, and thus we expect the normalised Hamming distance between hashes to form a normal distribution around 0.5.
 
 Positive case: for close image copies, we expect the normalised distance to form some distribution with power distributed closer to 0.
@@ -140,14 +142,41 @@ Now, we must compare these two histograms for each representation/featureset/has
  
  We set the threshold to a value such that the False Positive Rate (duplicates that are accepted, which is the area of the Negative case distribution that lies to the left of the threshold) is twice the False Negative Rate (non-duplicates that are discarded, which is the area of the Positive case distribution that lies to the right of the threshold).
  
- ![ls](images/cartoon_FPR_FNR.png)
+
 
 ## Adding Metadata
 You notice that each training image in your database, and every new test image, also comes with a metadata tag telling you where it came from.
 Let’s call this tag X. After some calculation you find that certain tags are more likely to correspond to images already in your dataset than others. Using appropriate pseudo-code or equivalently clear writing that would allow someone to begin coding your algorithm, describe how you would systematically use this metadata information to reduce your false positive and false negative error rate in discarding images?
 
+    initialise testImage
+    h1 = hash(testImage)
+    for each databaseImage in database:
+        initialise(databaseImage)
+        h2 = hash(databaseImage)
+        dist = hammingDistance(h1, h2, normalise=True)
+        if databaseImage.X is in badTags:
+            dist -= badTags.X.val
+    if dist < threshold:
+        discard image and notify
+    else:
+        add image to database
+    
 ## Scaling to Large Datasets
-How would the algorithms and ideas you presented in questions 3 and 4 scale to a large number of test and training images with unknown noise/blurring in each image? Please comment on the computational efficiency of your algorithms? What could be done to possibly make them more efficient? (Imagine you were doing this for the Google Image database!)
+__How would the algorithms and ideas you presented in questions 3 and 4 scale to a large number of test and training images with unknown noise/blurring in each image? Please comment on the computational efficiency of your algorithms? What could be done to possibly make them more efficient? (Imagine you were doing this for the Google Image database!)__
+
+Many of the algorithms I have implemented here are done with execution speed in mind. Hashing is much faster than computing a complex image similarity metric like SSIM or SURF. Using numpy means that arrays are handled in C rather than python, with attendant performance benefits. 
+
+However, performance gains are (always) to be had:
++ remaining Python loops can be unrolled, and the inner loop code wrapped into Cython, or re-implemented in a lower-level language.
++ pre-compute the hashes of the entire database (possibly with multiple hashing algorithms).
++ choose the hash function carefully: do we need a full discrete wavelet transform or DCT hash, or will a simple difference hash suffice? If not, can coefficients be pre-computed?
++ choose the pre-hash (i.e. image scaling) algorithm carefully: can simple bit grouping work? How much does performance suffer if we crop the image to a square with side lengths in some combination of multiples of 2^x?
++ structure the hash-table in some way to reduce the computational complexity of the naive search (O(N^2)) to something more optimal, such as a [BK-tree](https://en.wikipedia.org/wiki/BK-tree), (O(n _log_ N)), which is suited to binary near-string matching.
++ there is unlikely to be a benefit from using GPU hardware for this task, being suited to high compute-to-IO ratio computations. One could very efficiently compare hashes in hardware, however, and likely in parallel, although the memory storage requirements of the full google image database hash table might obviate this.
 
 ## Closing Question
-• Do you think this set of challenges missed some important data science skills that you have? If so please let us know. This is a chance to let us know what your super skills are!
+__Do you think this set of challenges missed some important data science skills that you have? If so please let us know. This is a chance to let us know what your super skills are!__
+
+One could use some of the recent developments in AI to classify and tag images at the same time. For instance, could either train a deep convolutional neural network on our own tagged database (or use one of the existing image classification CNNs) to automatically add image tags as we check for uniqueness.
+
+
