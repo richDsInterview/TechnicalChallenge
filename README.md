@@ -20,9 +20,8 @@ Option 2: convert the image files to an array (numpy) in memory and perform pixe
 
     exactImageRepetition.py infile dbDir
     
-    python3 exactImageRepetition.py Data_Science_Images/Test/test_image4.jpg Data_Science_Images/Training/
-    Exact matching image found in database directory:  True
-    Matching numpy representation to input image's found in database directory:  True
+    python3 exactImageRepetition.py Data_Science_Images/Test/test_image7.jpg Data_Science_Images/Training/
+    No match found. Adding test_image7.jpg to database directory,
 
 Of course there are serious limitations to this approach:
 * for the binary comparison to succeed, the files must be precisely the same; one is unable with this approach to determine similarity of images if they are of different file formats, even the same class of file format, even if the images are otherwise identical in all respects.
@@ -52,8 +51,12 @@ Issues:
 
 When invoked with arguments pointing to the test image and database directory respectively, the python script scaledImageRepetition.py will return if any of the database images is a scaled replica of the test image. If this is true, the image will not be added to the Training directory.
 
-    python3 scaledImageRepetition.py Data_Science_Images/Test/test_image4.jpg Data_Science_Images/Training/
-    Matching image found in database directory:  training_image3.jpg  (score:  1.0 ).
+    python3 scaledImageRepetition.py ../Data_Science_Images/Test/test_image4.jpg ../Data_Science_Images/Training/
+    Matching image found in database directory:  training_image3.jpg  (score:  1.0 )
+    Match(es) found. Not adding
+    
+    python3 scaledImageRepetition.py ../Data_Science_Images/Test/test_image6.jpeg ../Data_Science_Images/Training/
+    No match found. Adding test_image6.jpeg to database directory.
 
 ## Further Thoughts about Scaling
 It is a problem that bitwise comparison of a sample image ("test_image9.jpg", shown below) to a scaled and rescaled version of itself ("test_image9_scaled_unscaled.jpg", shown below that) yields a dismal similarity in a bitwise comparison. 59.8% of bit-wise pixel values are different, even though the images appear identical to the naked eye:
@@ -97,6 +100,7 @@ In the full implementation, I have written a comparison function that allows all
     Matching image found in database directory:  test_image9_scaled_unscaled.jpg  (score:  1.0 ).
     Matching image found in database directory:  test_thumb9_A.jpg  (score:  0.8046875 ).
     Matching image found in database directory:  test_thumb9_B.jpg  (score:  0.76171875 ).
+    Match(es) found. Not adding
 
 ## Perceptual Hashing
 All of the above processes are, in effect, tending toward a hash function (i.e. a map of arbitrary-sized data to data of fixed size) of the input image. Specifically, we would like a _perceptual_ hash of the image, one that produces similar hashes for similar input vectors/maps and dissimilar hashes for dissimilar inputs (note that this is the opposite behaviour requiured of cryptographic hash functions, which require maximally uncorrelated hashes for nearby input values).
